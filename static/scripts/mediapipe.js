@@ -429,15 +429,12 @@ async function predictWebcam() {
 
           let currentTime = Date.now();
 
-          console.log("shapes", shapes)
-
-          console.log("focusStartTime time elapsed:", currentTime - focusStartTime, currentTime, focusStartTime)
-          console.log("noFocusStartTime time elapsed:", currentTime - noFocusStartTime, currentTime, noFocusStartTime)
-
-          console.log("DEBUG:", eyeFocusResults.faceBlendshapes.length == 0 ? [] :
-          eyeFocusResults.faceBlendshapes[0].categories.filter((e) => e.score > 0.1))
-
-          console.log("------------------------------------------------------")
+          //console.log("shapes", shapes)
+          //console.log("focusStartTime time elapsed:", currentTime - focusStartTime, currentTime, focusStartTime)
+          //console.log("noFocusStartTime time elapsed:", currentTime - noFocusStartTime, currentTime, noFocusStartTime)
+          //console.log("DEBUG:", eyeFocusResults.faceBlendshapes.length == 0 ? [] :
+          //eyeFocusResults.faceBlendshapes[0].categories.filter((e) => e.score > 0.1))
+          //console.log("------------------------------------------------------")
 
           if (shapes.length == 0 && !eyeFocusResults.faceBlendshapes.length == 0) {
             noFocusStartTime = null
