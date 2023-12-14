@@ -445,7 +445,7 @@ async function predictWebcam() {
               } else {
   
                 if (currentTime - focusStartTime > MIN_FOCUS_TIME) {
-                  console.log("auto focus")
+                  //console.log("auto focus")
                   let response = YTPlayerController(null, null, null, "focus");
                   
                   if (response) {
@@ -466,7 +466,7 @@ async function predictWebcam() {
               } else {
 
                 if (currentTime - noFocusStartTime > MIN_FOCUS_TIME) {
-                  console.log("auto noFocus")
+                  //console.log("auto noFocus")
                   let response = YTPlayerController(null, null, null, "noFocus");
 
                   if (response) {
