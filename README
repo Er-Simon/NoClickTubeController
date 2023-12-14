@@ -1,0 +1,16 @@
+# Run Flask app
+#
+# flask --app main run
+# flask run
+# flask run --debug
+#
+# Enabling technologies
+#
+# IFrame Player API
+# https://developers.google.com/youtube/iframe_api_reference#playVideo
+#
+# MediaPipe
+# Hand Gesture Recognition
+# https://developers.google.com/mediapipe/solutions/vision/gesture_recognizer
+# Face Landmark Detection
+# https://developers.google.com/mediapipe/solutions/vision/face_landmarker

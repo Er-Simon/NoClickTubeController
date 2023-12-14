@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+
+    <meta name="description" content="Experience the future of interactive video playback with NoClickTubeController. Control your YouTube videos seamlessly using gestures and eye tracking. Pause automatically when your gaze wanders off-screen, and resume instantly upon regaining focus. Elevate your viewing experience with cutting-edge technology – no clicks needed!">
+    <meta name="keywords" content="Gesture, Eye, Tracking, Control, Video, YouTube">
+    <meta name="author" content="Simone Ruberto, Riccardo Ruberto">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/static/images/favicon/site.webmanifest">
+    <link rel="mask-icon" href="/static/images/favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <link rel="shortcut icon" href="/static/images/favicon/favicon.ico">
+    <meta name="msapplication-TileColor" content="#ffc40d">
+    <meta name="msapplication-config" content="/static/images/favicon/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+
+    <title>NoClickTubeController</title>
+
+    <link rel="stylesheet" href="static/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  </head>
+  <body>
+    {% include 'header.html' %}
+
+    <div class="container">
+      {% include 'heroes.html' %}
+
+      <div class="text-center mb-5">
+        <img id="loading" src="static/images/loading.svg" alt="Loading content">
+
+        <div id="gestureDemos" class="d-none">
+          <div id="liveView" class="videoView">
+            <button id="gestureWebcamButton" type="button" class="btn btn-danger my-button mb-4">Grant access to the webcam</button>
+            <div class="mt-2 mb-4">
+              <div class="row justify-content-center d-none" id="gestureSwitch">
+                <div class="col-9 col-sm-4 col-lg-2">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input my-form-check-input" type="checkbox" role="switch" id="flexSwitchGestureControl" checked>
+                    <label class="form-check-label switch-label" for="flexSwitchGestureControl">Gestures control</label>
+                  </div>
+                </div>
+              </div>
+              <div class="row justify-content-center d-none" id="eyeFocusSwitch">
+                <div class="col-9 col-sm-4 col-lg-2">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input my-form-check-input" type="checkbox" role="switch" id="flexSwitchEyeFocusControl" checked>
+                    <label class="form-check-label switch-label" for="flexSwitchEyeFocusControl">Eye focus control</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12 col-md-6 offset-md-3">
+                <div style="position: relative;">
+                  <video id="gestureWebcam" class="d-none" autoplay="" playsinline="" style="height: auto; width: 100%;"></video>
+                  <canvas class="d-none" id="gesture_output_canvas" width="1280" height="720" style="position: absolute; top: 0px; height: auto; width: 100%; z-index: 1;"></canvas>
+                  <canvas class="d-none" id="eye_focus_output_canvas" width="1280" height="720" style="position: absolute; top: 0px; height: auto; width: 100%; z-index: 2;"></canvas>
+                  <!-- <p id="gesture_output" class="text-center mt-2 d-none"></p> -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="faceLandmarkerResults">
+          <div class="blend-shapes">
+            <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-5" id="videoSection">
+        <div class="col-12 col-md-8 offset-md-2">
+          <div class="mb-3">
+            <label for="basic-url" class="form-label display-6 fw-bold my-border mb-4">YouTube Video</label>
+            <div id="alert-message" class="alert alert-danger d-none" role="alert">You have entered an invalid YouTube link</div>
+            <div class="input-group mb-3">
+              <span class="input-group-text" id="basic-addon3">URL</span>
+
+              <script>
+                function hideErrorMessage() {
+                  let alert = document.getElementById('alert-message')
+                  alert.classList.add('d-none')
+                }
+              </script>
+
+              <input oninput="hideErrorMessage()" type="text" class="form-control" id="youtube-url" aria-describedby="basic-addon3 basic-addon4">
+              <button onclick="handleYouTubeURL()" id="play-button" class="btn btn-dagner my-button w-25" type="button" disabled>Play</button>
+            </div>
+
+            <div class="form-text lead" id="basic-addon4">
+              <p style="word-break: break-all;">
+                Examples of valid URLs<br>
+                https://www.youtube.com/watch?v=yOP_FY2KTm8<br>
+                https://youtu.be/yOP_FY2KTm8?feature=shared<br>
+                https://www.youtube.com/embed/yOP_FY2KTm8?si=fc98yk9zZ1Bi8TGm
+              </p>
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="row">
+              <div class="col-12 my-4">
+                <div id="player" class="d-none"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-4" id="controlsSection">
+        <div class="col-12 col-md-8 offset-md-2">
+          <div class="mb-3">
+            <label for="basic-url" class="form-label display-6 fw-bold my-border mb-4">Custom Controls</label>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text my-width" for="playVideoControl">Play</label>
+              <select class="form-select my-width" id="playVideoControl"></select>
+            </div>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text my-width" for="pauseVideoControl">Stop</label>
+              <select class="form-select my-width" id="pauseVideoControl"></select>
+            </div>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text my-width" for="volumeUpVideoControl">Volume Up</label>
+              <select class="form-select my-width" id="volumeUpVideoControl"></select>
+            </div>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text my-width" for="volumeDownVideoControl">Volume Down</label>
+              <select class="form-select my-width" id="volumeDownVideoControl"></select>
+            </div>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text my-width" for="muteVideoControl">Mute</label>
+              <select class="form-select my-width" id="muteVideoControl"></select>
+            </div>
+
+            <div class="input-group mb-3">
+              <label class="input-group-text my-width" for="unmuteVideoControl">Unmute</label>
+              <select class="form-select my-width" id="unmuteVideoControl"></select>
+            </div>
+
+            <script>
+              const controls = {
+                closed_fist: 'Closed fist ✊',
+                open_palm: 'Open palm ✋',
+                mute: 'Silence 🤫',
+                stop: 'Raised Hand ✋',
+                call: 'Call Me 🤙',
+                ok: 'OK Hand 👌',
+                dislike: 'Thumbs down 👎',
+                like: 'Thumbs up 👍',
+                peace: 'Victory ✌️',
+                rock: 'Rock 🤘',
+                TwoFingers: 'Two fingers',
+                ThreeFingers: 'Three fingers',
+                FourFingers: 'Four fingers',
+                FiveFingers: 'Five fingers',
+                SevenFingers: 'Six fingers',
+                SevenFingers: 'Seven fingers',
+                EightFingers: 'Eight fingers'
+              }
+              
+              var actionToControls = {
+                playVideoControl: 'ok',
+                pauseVideoControl: 'stop',
+                volumeUpVideoControl: 'rock',
+                volumeDownVideoControl: 'closed_fist',
+                muteVideoControl: 'mute',
+                unmuteVideoControl: 'like'
+              }
+              
+              var userPreferences = window.localStorage.getItem('actionToControls')
+              
+              if (userPreferences) {
+                actionToControls = JSON.parse(userPreferences)
+              }
+              
+              var controlsToAction = {
+                "focus": "playVideoControl",
+                "noFocus": "pauseVideoControl"
+              }
+              
+              for (const action in actionToControls) controlsToAction[actionToControls[action]] = action
+              
+              const selectElements = document.querySelectorAll('select')
+              
+              function handleOptions() {
+                for (const selectActionName in actionToControls) {
+                  var actionSelect = document.getElementById(selectActionName)
+                  actionSelect.innerHTML = ''
+              
+                  var selectedOption = document.createElement('option')
+                  selectedOption.value = actionToControls[selectActionName]
+                  selectedOption.text = controls[actionToControls[selectActionName]]
+                  actionSelect.add(selectedOption)
+              
+                  for (const control in controls) {
+                    if (!controlsToAction.hasOwnProperty(control)) {
+                      var option = document.createElement('option')
+                      option.value = control
+                      option.text = controls[control]
+                      actionSelect.add(option)
+                    }
+                  }
+                }
+              }
+              
+              function onChangeHandler(event) {
+                const selectedId = event.target.id
+                const selectedValue = event.target.value
+              
+                delete controlsToAction[actionToControls[selectedId]]
+                actionToControls[selectedId] = selectedValue
+                controlsToAction[selectedValue] = selectedId
+              
+                handleOptions()
+              
+                window.localStorage.setItem('actionToControls', JSON.stringify(actionToControls))
+              }
+              
+              selectElements.forEach((select) => {
+                select.addEventListener('change', onChangeHandler)
+              })
+              
+              handleOptions()
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script src="static/scripts/youtube-player.js"></script>
+    <script src="static/scripts/mediapipe.js" id="rendered-js" type="module"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm/vision_wasm_internal.js" crossorigin="anonymous"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+  </body>
+</html>

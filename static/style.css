@@ -1,0 +1,78 @@
+html, body {
+    color: #282828;
+}
+
+
+.my-nav-link {
+    color: #282828 !important;
+}
+
+.my-nav-link:hover {
+    color: rgba(204,0,0,0.9) !important;
+}
+
+.my-active {
+    background-color: rgba(204,0,0,0.9) !important;
+    color: white !important;
+    font-weight: 500 !important;
+}
+
+.my-active:hover {
+    color: #282828 !important;
+}
+
+.my-button {
+    background-color: rgba(204,0,0,0.9) !important;
+    color: white !important;
+    font-weight: 500 !important;
+}
+
+.my-button:hover {
+    color: #282828 !important;
+}
+
+.my-border {
+    border-bottom: 5px solid rgba(204,0,0,0.9);
+}
+
+.my-width {
+    width: 100% !important;
+}
+
+.my-form-check-input:checked {
+    background-color: rgba(204,0,0,0.9) !important;
+    border-color: rgba(204,0,0,0.9) !important;
+}
+
+.my-li {
+    display: inline;
+}
+
+.switch-label {
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+@media (max-width: 576px) {
+    .my-width {
+        border-radius: 0 !important;
+    }
+}
+
+@media (min-width: 576px) {
+    .my-width {
+        width: 50% !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .my-width {
+        width: 33% !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .my-width {
+        width: 25% !important;
+    }
+}
