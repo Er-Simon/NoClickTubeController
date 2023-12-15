@@ -25,4 +25,4 @@ flask run
 
 - [Gesture recognition](https://developers.google.com/mediapipe/solutions/vision/gesture_recognizer) - Recognize hand gestures in real time
 
-- [Face landmark detection](ttps://developers.google.com/mediapipe/solutions/vision/face_landmarker) - Detect face landmarks and facial expressions
+- [Face landmark detection](https://developers.google.com/mediapipe/solutions/vision/face_landmarker) - Detect face landmarks and facial expressions
