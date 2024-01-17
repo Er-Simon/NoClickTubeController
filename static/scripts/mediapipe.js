@@ -45,7 +45,7 @@ const initializeModels = async () => {
     {
       baseOptions: {
         modelAssetPath:
-          "https://raw.githubusercontent.com/Er-Simon/GestureRecognitionCustomModel/main/gesture_recognizer.task",
+          "https://raw.githubusercontent.com/Er-Simon/EZGestureTubeController/main/static/model/gesture_recognizer.task",
         delegate: "GPU",
       },
       runningMode: runningMode,
