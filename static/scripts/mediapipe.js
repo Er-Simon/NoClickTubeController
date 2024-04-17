@@ -1,41 +1,33 @@
 // Copyright 2023 The MediaPipe Authors.
+
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
+
 //      http://www.apache.org/licenses/LICENSE-2.0
+
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
-const {
-  GestureRecognizer,
-  FaceLandmarker,
-  FilesetResolver,
-  DrawingUtils,
-} = vision;
+
+const { GestureRecognizer, FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
+
+let faceLandmarker;
+let gestureRecognizer;
+
+const runningMode = "VIDEO";
 
 const loadingElement = document.getElementById("loading");
-const gestureDemosSection = document.getElementById("gestureDemos");
-const videoBlendShapes = document.getElementById("video-blend-shapes");
-
-let gestureRecognizer;
-let faceLandmarker;
-let runningMode = "VIDEO";
-
-let enableWebcamButton;
-let enableGesture;
-let enableEyeFocus;
-
-let webcamRunning = false;
-let gestureFunctionEnabled = true;
-let eyeFocusFunctionEnabled = true;
+const recognitionSection = document.getElementById("recognitionSection");
 
 // Before we can use HandLandmarker class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment to
 // get everything needed to run.
-const initializeModels = async () => {
+async function createFaceLandmarker() {
   const filesetResolver = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
   );
@@ -56,32 +48,47 @@ const initializeModels = async () => {
   faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
     baseOptions: {
       modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-      delegate: "GPU",
+      delegate: "GPU"
     },
     outputFaceBlendshapes: true,
     runningMode,
-    numFaces: 1,
+    numFaces: 1
   });
 
   loadingElement.classList.add("d-none");
-  gestureDemosSection.classList.remove("d-none");
-};
+  recognitionSection.classList.remove("d-none");
+}
 
-initializeModels();
+createFaceLandmarker();
 
 /********************************************************************
 // Demo 2: Continuously grab image from webcam stream and detect it.
 ********************************************************************/
-const video = document.getElementById("gestureWebcam");
-const canvasGestureElement = document.getElementById("gesture_output_canvas");
-const canvasEyeFocusElement = document.getElementById(
-  "eye_focus_output_canvas"
-);
-const canvasGestureCtx = canvasGestureElement.getContext("2d");
-const canvasEyeFocusCtx = canvasEyeFocusElement.getContext("2d");
-//const gestureOutput = document.getElementById("gesture_output");
 
-const canvasWidth = canvasGestureElement.width;
+let webcamRunning = false;
+let webcamStream;
+
+const webcamButton = document.getElementById("webcamButton");
+const video = document.getElementById("userVideo");
+
+const gestureSwitchSection = document.getElementById("gestureSwitch");
+const eyeFocusSwitchSection = document.getElementById("eyeFocusSwitch");
+const gestureSwitch = document.getElementById("flexSwitchGestureControl");
+const eyeFocusSwitch = document.getElementById("flexSwitchEyeFocusControl");
+
+let gestureStatus = false;
+let eyeFocusStatus = false;
+
+const calibrationData = {
+  eyeLookDownLeft: 0,
+  eyeLookDownRight: 0,
+  eyeLookInLeft: 0,
+  eyeLookInRight: 0,
+  eyeLookOutLeft: 0,
+  eyeLookOutRight: 0,
+  eyeLookUpLeft: 0,
+  eyeLookUpRight: 0,
+}
 
 // Check if webcam access is supported.
 function hasGetUserMedia() {
@@ -91,136 +98,182 @@ function hasGetUserMedia() {
 // If webcam supported, add event listener to button for when user
 // wants to activate it.
 if (hasGetUserMedia()) {
-  enableWebcamButton = document.getElementById("gestureWebcamButton");
-  enableWebcamButton.addEventListener(
-    "click",
-    () => (webcamRunning = !webcamRunning)
-  );
-  enableWebcamButton.addEventListener("click", displayFunctions);
-
-  enableGesture = document.getElementById("flexSwitchGestureControl");
-  enableGesture.addEventListener("change", (event) => {
-    canvasGestureCtx.clearRect(
-      0,
-      0,
-      canvasGestureElement.width,
-      canvasGestureElement.height
-    );
-    gestureFunctionEnabled = event.currentTarget.checked;
-  });
-
-  enableEyeFocus = document.getElementById("flexSwitchEyeFocusControl");
-  enableEyeFocus.addEventListener("change", (event) => {
-    canvasEyeFocusCtx.clearRect(
-      0,
-      0,
-      canvasEyeFocusElement.width,
-      canvasEyeFocusElement.height
-    );
-    eyeFocusFunctionEnabled = event.currentTarget.checked;
-
-    var faceLandmarkerResults = document.getElementById(
-      "faceLandmarkerResults"
-    );
-    if (eyeFocusFunctionEnabled === true) {
-      faceLandmarkerResults.classList.remove("d-none");
-    } else {
-      faceLandmarkerResults.classList.add("d-none");
-    }
-  });
+  webcamButton.addEventListener("click", enableCam);
 } else {
   console.warn("getUserMedia() is not supported by your browser");
 }
 
-function displayFunctions(event) {
-  var gestureSwitch = document.getElementById("gestureSwitch");
-  var eyeFocusSwitch = document.getElementById("eyeFocusSwitch");
+function handleGestureSwitchChange() {
+  if (gestureSwitch.checked) {
+    canvasGestureElement.classList.remove("d-none");
+    canvasGestureInformationElement.classList.remove("d-none");
 
-  if (webcamRunning === false) {
-    gestureSwitch.classList.add("d-none");
-    eyeFocusSwitch.classList.add("d-none");
+    gestureStatus = true;
   } else {
-    gestureSwitch.classList.remove("d-none");
-    eyeFocusSwitch.classList.remove("d-none");
+    canvasGestureElement.classList.add("d-none");
+    canvasGestureInformationElement.classList.add("d-none");
+
+    gestureStatus = false;
+  }
+}
+
+function photoOnClick(dot) {
+  return new Promise(resolve => {
+    const timeoutDuration = 100000; 
+
+    const timeoutId = setTimeout(() => {
+      dot.removeEventListener('click', gestore);
+      resolve(false);
+    }, timeoutDuration);
+
+    const gestore = () => {
+      clearTimeout(timeoutId);
+      var result = faceLandmarker.detectForVideo(video, performance.now());
+      dot.removeEventListener('click', gestore);
+      resolve(result);
+    };
+
+    dot.addEventListener('click', gestore);
+  });
+}
+
+async function eyeFocusCalibration() {
+  var response = false;
+
+  const modal = document.getElementById("calibrationModal");
+  var calibrationModal = new bootstrap.Modal(modal, {});
+
+  await calibrationModal.show();
+
+  var dots = document.getElementsByClassName('dot');
+
+  for (var index = 0; index < dots.length; index++) {
+    let dot = dots[index];
+
+    dot.classList.remove('invisible');
+
+    let result = await photoOnClick(dot);
+
+    dot.classList.add('invisible');
+
+    if (result === false) break;
+
+    result.faceBlendshapes[0].categories.forEach((item) => {
+      if (item.categoryName in calibrationData) {
+        if (item.score > calibrationData[item.categoryName]) {
+          calibrationData[item.categoryName] = item.score;
+        }
+      }
+    })
+
+    if (index == dots.length - 1) response = true;
   }
 
-  enableCam(event);
+  await calibrationModal.hide();
+
+  return response;
+}
+
+function handleEyeFocusSwitchChange() {
+  if (eyeFocusSwitch.checked) {
+    var response = window.confirm('Before use facial features to control the playback of the player you need to perform the calibration phase.\nPress ok to start the calibration immediately.');
+    
+    if (response === true) {
+      webcamRunning = false;
+
+      eyeFocusCalibration().then((success) => {
+        if (!success) {
+          alert('Calibration failed, enable the mode to try again!');
+          eyeFocusSwitch.checked = !eyeFocusSwitch.checked;
+
+        } else {
+          canvasEyeFocusElement.classList.remove("d-none");
+          eyeFocusStatus = true;  
+        }
+      }).then(() => {
+        webcamRunning = true;
+        video.srcObject = webcamStream; 
+      });
+
+    } else {
+      eyeFocusSwitch.checked = !eyeFocusSwitch.checked;
+    }
+  } else {
+    canvasEyeFocusElement.classList.add("d-none");
+    eyeFocusStatus = false;
+  }
 }
 
 // Enable the live webcam view and start detection.
 function enableCam(event) {
-  if (!gestureRecognizer) {
-    alert("Please wait for gestureRecognizer to load");
-    return;
-  }
-
-  if (!faceLandmarker) {
-    alert("Please wait for faceLandmarker to load");
+  if (!gestureRecognizer || !faceLandmarker) {
+    console.log("Wait! Models not loaded yet.");
     return;
   }
 
   if (webcamRunning === false) {
-    enableWebcamButton.innerText = "Enable webcam access";
-    video.classList.add("d-none");
-    canvasGestureElement.classList.add("d-none");
-    canvasEyeFocusElement.classList.add("d-none");
-    return;
+    webcamRunning = true;
+    webcamButton.innerText = "Disable Webcam Access";
+    
+    // getUsermedia parameters.
+    const constraints = {
+      video: true
+    };
+
+    // Activate the webcam stream.
+    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+      video.srcObject = stream;
+      webcamStream = stream;
+    }).then(() => {
+      handleGestureSwitchChange();
+      handleEyeFocusSwitchChange();
+
+      video.addEventListener("loadeddata", predictWebcam);
+
+      gestureSwitch.addEventListener('change', handleGestureSwitchChange);
+      eyeFocusSwitch.addEventListener('change', handleEyeFocusSwitchChange);
+
+      video.classList.remove('d-none');
+      gestureSwitchSection.classList.remove("d-none");
+      eyeFocusSwitchSection.classList.remove("d-none");
+    });
+
   } else {
-    enableWebcamButton.innerText = "Disable webcam access";
-    video.classList.remove("d-none");
-    canvasGestureElement.classList.remove("d-none");
-    canvasEyeFocusElement.classList.remove("d-none");
+    webcamRunning = false;
+    webcamButton.innerText = "Enable Webcam Access";
+
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(track => {
+        track.stop();
+      });
+  
+      webcamStream = undefined;
+    }
+  
+    video.removeEventListener("loadeddata", predictWebcam);
+
+    video.classList.add('d-none');
+    gestureSwitchSection.classList.add("d-none");
+    eyeFocusSwitchSection.classList.add("d-none");
+    
+    gestureSwitch.removeEventListener('change', handleGestureSwitchChange);
+    eyeFocusSwitch.removeEventListener('change', handleEyeFocusSwitchChange);
   }
-
-  // getUsermedia parameters.
-  const constraints = {
-    video: true,
-  };
-
-  // Activate the webcam stream.
-  navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-    video.srcObject = stream;
-    video.addEventListener("loadeddata", predictWebcam);
-  });
 }
 
-let eyeFocusResults = undefined;
-let gestureResults = undefined;
-const drawingEyeFocusUtils = new DrawingUtils(canvasEyeFocusCtx);
+const canvasGestureElement = document.getElementById("gesture_output_canvas");
+const canvasGestureInformationElement = document.getElementById("gesture_information_output_canvas");
+const canvasEyeFocusElement = document.getElementById("eye_focus_output_canvas");
+
+const canvasGestureCtx = canvasGestureElement.getContext("2d");
+const canvasGestureInformationCtx = canvasGestureInformationElement.getContext("2d");
+const canvasEyeFocusCtx = canvasEyeFocusElement.getContext("2d");
+
 const drawingGestureUtils = new DrawingUtils(canvasGestureCtx);
+const drawingEyeFocusUtils = new DrawingUtils(canvasEyeFocusCtx);
 
-const MIN_SCORE = 0.44
-const MIN_FOCUS_TIME = 650
-const FACE_BLEND_SHAPES = [
-  "eyeSquintLeft",
-  "eyeSquintRight",
-  "browDownLeft",
-  "browDownRight",
-  "eyeLookOutLeft",
-  "eyeLookOutRight",
-  "eyeLookDownLeft",
-  "eyeLookDownRight",
-  "mouthShrugLower",
-  "browOuterUpLeft",
-  "browOuterUpRight",
-]
 
-var focusStartTime = null;
-var noFocusStartTime = null;
-var automaticResumed = false;
-var automaticStopped = false;
-
-async function predictWebcam() {
-  const webcamElement = document.getElementById("gestureWebcam");
-
-  canvasEyeFocusCtx.clearRect(
-    0,
-    0,
-    canvasEyeFocusElement.width,
-    canvasEyeFocusElement.height
-  );
-  canvasEyeFocusCtx.save();
-
+function clearGestureCanvas() {
   canvasGestureCtx.clearRect(
     0,
     0,
@@ -228,289 +281,255 @@ async function predictWebcam() {
     canvasGestureElement.height
   );
   canvasGestureCtx.save();
+}
 
-  if (gestureFunctionEnabled === true) {
-    let nowInMs = Date.now();
+function clearGestureInformationCanvas() {
+  canvasGestureInformationCtx.clearRect(
+    0,
+    0,
+    canvasGestureInformationElement.width,
+    canvasGestureInformationElement.height
+  );
+  canvasGestureInformationCtx.save();
+}
 
-    gestureResults = gestureRecognizer.recognizeForVideo(video, nowInMs);
+function gestureRecognition(video, startTimeMs) {
+  clearGestureCanvas();
+  clearGestureInformationCanvas();
 
-    canvasGestureElement.style.height = `${webcamElement.offsetHeight}px`;
-    canvasGestureElement.style.width = `${webcamElement.offsetWidth}px`;
-    canvasGestureElement.style.left = `${webcamElement.offsetLeft}px`;
+  canvasGestureElement.style.height = `${video.offsetHeight}px`;
+  canvasGestureElement.style.width = `${video.offsetWidth}px`;
+  canvasGestureElement.style.left = `${video.offsetLeft}px`;
 
-    if (gestureResults) {
-      if (gestureResults.landmarks) {
-        for (const landmarks of gestureResults.landmarks) {
-          drawingGestureUtils.drawConnectors(
-            landmarks,
-            GestureRecognizer.HAND_CONNECTIONS,
-            {
-              color: "#00FF00",
-              lineWidth: 5,
-            }
-          );
-          drawingGestureUtils.drawLandmarks(landmarks, {
-            color: "#FF0000",
-            lineWidth: 2,
-          });
+  canvasGestureInformationElement.style.height = `${video.offsetHeight}px`;
+  canvasGestureInformationElement.style.width = `${video.offsetWidth}px`;
+  canvasGestureInformationElement.style.left = `${video.offsetLeft}px`;
+
+  let gestureResults = gestureRecognizer.recognizeForVideo(video, startTimeMs);
+
+  if (gestureResults.landmarks) {
+    for (const landmarks of gestureResults.landmarks) {
+      drawingGestureUtils.drawConnectors(
+        landmarks,
+        GestureRecognizer.HAND_CONNECTIONS,
+        {
+          color: "#00FF00",
+          lineWidth: 5,
         }
-      }
-    }
-
-    var rightHandGesture = null;
-    var leftHandGesture = null;
-    var totalFingerCount = 0;
-
-    if (gestureResults) {
-      if (gestureResults.gestures.length > 0) {
-        if (webcamRunning) {
-          for (var i = 0; i < gestureResults.gestures.length; i++) {
-            var categoryName = gestureResults.gestures[i][0].categoryName;
-
-            var categoryScore = parseFloat(
-              gestureResults.gestures[i][0].score * 100
-            ).toFixed(2);
-
-            var handLabel = gestureResults.handednesses[i][0].displayName;
-
-            if (handLabel == "Right") {
-              rightHandGesture = categoryName;
-            } else if (handLabel == "Left") {
-              leftHandGesture = categoryName;
-            }
-
-            var fingerCount = 0;
-            var landmarks = [];
-
-            for (const landmark of gestureResults.landmarks[i]) {
-              landmarks.push([landmark.x, landmark.y]);
-            }
-
-            if (handLabel == "Left" && landmarks[4][0] > landmarks[3][0]) {
-              fingerCount = fingerCount + 1;
-            } else if (
-              handLabel == "Right" &&
-              landmarks[4][0] < landmarks[3][0]
-            ) {
-              fingerCount = fingerCount + 1;
-            }
-
-            if (landmarks[8][1] < landmarks[6][1])
-              fingerCount = fingerCount + 1;
-            if (landmarks[12][1] < landmarks[10][1])
-              fingerCount = fingerCount + 1;
-            if (landmarks[16][1] < landmarks[14][1])
-              fingerCount = fingerCount + 1;
-            if (landmarks[20][1] < landmarks[18][1])
-              fingerCount = fingerCount + 1;
-
-            totalFingerCount += fingerCount;
-
-            var gestureOutput = `GestureRecognizer: ${categoryName}\nConfidence: ${categoryScore} %\nHandedness: ${handLabel}\nFingerCount: ${fingerCount}`;
-
-            var offset = 10;
-            var lineheight = 38;
-
-            var lines = gestureOutput
-              .split("")
-              .join(String.fromCharCode(8202))
-              .split("\n");
-
-            canvasGestureCtx.font = "36px Arial";
-
-            var textMaxWidth = lines.map(
-              (text) => canvasGestureCtx.measureText(text).width
-            );
-
-            textMaxWidth = Math.max.apply(Math, textMaxWidth);
-
-            canvasGestureCtx.textAlign = "start";
-            canvasGestureCtx.textBaseline = "top";
-
-            canvasGestureCtx.fillStyle = "rgba(0, 0, 0, .6)";
-            canvasGestureCtx.fillRect(
-              (canvasWidth - textMaxWidth - offset) * i,
-              0,
-              textMaxWidth + offset * 2,
-              lines.length * lineheight + offset * 2
-            );
-
-            canvasGestureCtx.fillStyle = "white";
-
-            for (var j = 0; j < lines.length; j++)
-              canvasGestureCtx.fillText(
-                lines[j],
-                (canvasWidth - textMaxWidth - offset) * i + offset,
-                offset + j * lineheight
-              );
-          }
-
-          YTPlayerController(
-            rightHandGesture,
-            leftHandGesture,
-            totalFingerCount,
-            null
-          );
-        }
-      }
+      );
+      drawingGestureUtils.drawLandmarks(landmarks, {
+        color: "#FF0000",
+        lineWidth: 2,
+      });
     }
   }
 
 
-  if (eyeFocusFunctionEnabled === true) {
-    canvasEyeFocusElement.style.height = `${webcamElement.offsetHeight}px`;
-    canvasEyeFocusElement.style.width = `${webcamElement.offsetWidth}px`;
-    canvasEyeFocusElement.style.left = `${webcamElement.offsetLeft}px`;
+  var recognitionResult = {
+    type: 'gesture',
+    data: []
+  };
 
-    if (runningMode === "IMAGE") {
-      runningMode = "VIDEO";
-      await faceLandmarker.setOptions({ runningMode: runningMode });
-    }
+  if (gestureResults.gestures) {
+    for (var i = 0; i < gestureResults.gestures.length; i++) {
+      var categoryName = gestureResults.gestures[i][0].categoryName;
 
-    let startTimeMs = performance.now();
+      var categoryScore = parseFloat(
+        gestureResults.gestures[i][0].score * 100
+      ).toFixed(2);
 
-    eyeFocusResults = faceLandmarker.detectForVideo(video, startTimeMs);
+      var handLabel = gestureResults.handednesses[i][0].displayName;
 
-    if (eyeFocusResults.faceLandmarks) {
-      for (const landmarks of eyeFocusResults.faceLandmarks) {
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-          { color: "#C0C0C070", lineWidth: 1 }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-          { color: "#FF3030" }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-          { color: "#FF3030" }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-          { color: "#30FF30" }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-          { color: "#30FF30" }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-          { color: "#E0E0E0" }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_LIPS,
-          { color: "#E0E0E0" }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-          { color: "#FF3030" }
-        );
-        drawingEyeFocusUtils.drawConnectors(
-          landmarks,
-          FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-          { color: "#30FF30" }
-        );
+      var landmarks = [];
+
+      for (const landmark of gestureResults.landmarks[i]) {
+        landmarks.push([landmark.x, landmark.y]);
       }
-    }
 
-    if (!gestureResults || gestureResults.gestures.length == 0) {
-      if (eyeFocusResults) {
-        if (eyeFocusResults.faceBlendshapes) {
-          let shapes = eyeFocusResults.faceBlendshapes.length == 0 ? [] :
-            eyeFocusResults.faceBlendshapes[0].categories.filter((e) => e.score > MIN_SCORE && FACE_BLEND_SHAPES.includes(e.categoryName))
-
-          let currentTime = Date.now();
-
-          //console.log("shapes", shapes)
-          //console.log("focusStartTime time elapsed:", currentTime - focusStartTime, currentTime, focusStartTime)
-          //console.log("noFocusStartTime time elapsed:", currentTime - noFocusStartTime, currentTime, noFocusStartTime)
-          //console.log("DEBUG:", eyeFocusResults.faceBlendshapes.length == 0 ? [] :
-          //eyeFocusResults.faceBlendshapes[0].categories.filter((e) => e.score > 0.1))
-          //console.log("------------------------------------------------------")
-
-          if (shapes.length == 0 && !eyeFocusResults.faceBlendshapes.length == 0) {
-            noFocusStartTime = null
-
-            if (!automaticResumed) {
-              if (focusStartTime == null) {
-                focusStartTime = currentTime;
-              } else {
-  
-                if (currentTime - focusStartTime > MIN_FOCUS_TIME) {
-                  //console.log("auto focus")
-                  let response = YTPlayerController(null, null, null, "focus");
-                  
-                  if (response) {
-                    automaticResumed = true;
-                    automaticStopped = false;
-                  }
-                  
-                  focusStartTime = null;
-                }
-              }
-            }
-          } else {
-            focusStartTime = null
-
-            if (!automaticStopped) {
-              if (noFocusStartTime == null) {
-                noFocusStartTime = currentTime;
-              } else {
-
-                if (currentTime - noFocusStartTime > MIN_FOCUS_TIME) {
-                  //console.log("auto noFocus")
-                  let response = YTPlayerController(null, null, null, "noFocus");
-
-                  if (response) {
-                    automaticStopped = true;
-                    automaticResumed = false;
-                  }
-
-                  noFocusStartTime = null;
-                }
-              }
-            } 
-          }            
-        }
+      var fingerCount = 0;
+      if (handLabel == "Left" && landmarks[4][0] > landmarks[3][0]) {
+        fingerCount = fingerCount + 1;
+      } else if (
+        handLabel == "Right" &&
+        landmarks[4][0] < landmarks[3][0]
+      ) {
+        fingerCount = fingerCount + 1;
       }
-    }
-      
-    //drawBlendShapes(videoBlendShapes, eyeFocusResults.faceBlendshapes);
-  }
 
-  // Call this function again to keep predicting when the browser is ready.
-  if (webcamRunning === true) {
-    window.requestAnimationFrame(predictWebcam);
+      if (landmarks[8][1] < landmarks[6][1])
+        fingerCount = fingerCount + 1;
+      if (landmarks[12][1] < landmarks[10][1])
+        fingerCount = fingerCount + 1;
+      if (landmarks[16][1] < landmarks[14][1])
+        fingerCount = fingerCount + 1;
+      if (landmarks[20][1] < landmarks[18][1])
+        fingerCount = fingerCount + 1;
+
+      recognitionResult.data.push({
+        recognizedGesture: categoryName,
+        fingerCount: fingerCount
+      })
+
+      var gestureOutput = `GestureRecognizer: ${categoryName}\nConfidence: ${categoryScore} %\nHandedness: ${handLabel}\nFingerCount: ${fingerCount}`;
+
+      var offset = 10;
+      var lineheight = 38;
+
+      var lines = gestureOutput
+        .split("")
+        .join(String.fromCharCode(8202))
+        .split("\n");
+
+      canvasGestureInformationCtx.font = "36px Arial";
+
+      var textMaxWidth = lines.map(
+        (text) => canvasGestureInformationCtx.measureText(text).width
+      );
+
+      textMaxWidth = Math.max.apply(Math, textMaxWidth);
+
+      canvasGestureInformationCtx.textAlign = "start";
+      canvasGestureInformationCtx.textBaseline = "top";
+
+      canvasGestureInformationCtx.fillStyle = "rgba(0, 0, 0, .6)";
+      canvasGestureInformationCtx.fillRect(
+        (canvasGestureElement.width - textMaxWidth - offset) * i,
+        0,
+        textMaxWidth + offset * 2,
+        lines.length * lineheight + offset * 2
+      );
+
+      canvasGestureInformationCtx.fillStyle = "white";
+
+      for (var j = 0; j < lines.length; j++)
+      canvasGestureInformationCtx.fillText(
+          lines[j],
+          (canvasGestureElement.width - textMaxWidth - offset) * i + offset,
+          offset + j * lineheight
+        );
+    }
+
+    if (recognitionResult.data.length > 0)
+      YTPlayerController(recognitionResult);
   }
 }
 
-function drawBlendShapes(el, blendShapes) {
-  if (!blendShapes.length) {
-    return;
+function clearEyeFocusCanvas() {
+  canvasEyeFocusCtx.clearRect(
+    0,
+    0,
+    canvasEyeFocusElement.width,
+    canvasEyeFocusElement.height
+  );
+  canvasEyeFocusCtx.save();
+}
+
+function eyeFocusRecognition(video, startTimeMs) {
+  clearEyeFocusCanvas();
+  
+  canvasEyeFocusElement.style.height = `${video.offsetHeight}px`;
+  canvasEyeFocusElement.style.width = `${video.offsetWidth}px`;
+  canvasEyeFocusElement.style.left = `${video.offsetLeft}px`;
+
+  results = faceLandmarker.detectForVideo(video, startTimeMs);
+
+  if (results.faceLandmarks) {
+    for (const landmarks of results.faceLandmarks) {
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+        { color: "#C0C0C070", lineWidth: 1 }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+        { color: "#FF3030" }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+        { color: "#FF3030" }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+        { color: "#30FF30" }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+        { color: "#30FF30" }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+        { color: "#E0E0E0" }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LIPS,
+        { color: "#E0E0E0" }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
+        { color: "#FF3030" }
+      );
+      drawingEyeFocusUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
+        { color: "#30FF30" }
+      );
+    }
   }
 
-  let htmlMaker = "";
-  blendShapes[0].categories.map((shape) => {
-    var score = +shape.score.toFixed(3);
-    if (score !== 0 && score > 0.1) {
-      htmlMaker += `
-        <li class="blend-shapes-item my-li">
-          <span class="blend-shapes-label">${shape.displayName ||
-            shape.categoryName}</span>
-          <span class="blend-shapes-value" style="width: calc(${+shape.score *
-            100}% - 120px)">${(+shape.score).toFixed(4)}</span>
-        </li>
-      `;
-    }
-  });
+  if (results.faceBlendshapes) {
+    let shapes = results.faceBlendshapes.length == 0 ? [] :
+      results.faceBlendshapes[0].categories.filter(
+        (e) => e.categoryName in calibrationData && e.score > calibrationData[e.categoryName]
+      )
 
-  el.innerHTML = htmlMaker;
+    //if (shapes.length > 0) {
+    //  for(var index in shapes) {
+    //    console.log(`${shapes[index].categoryName} ${shapes[index].score}`);
+    //  }
+    //  console.log('\n');
+    //}
+
+    let recognitionResult = {
+      type: 'face',
+      data: undefined
+    };
+
+    if (shapes.length === 0) {
+      recognitionResult.data = 'focus';
+    } else {
+      recognitionResult.data = 'noFocus';
+    }
+
+    YTPlayerController(recognitionResult);
+  }
+}
+
+let lastVideoTime = -1;
+let results = undefined;
+
+function predictWebcam() {  
+  if (lastVideoTime !== video.currentTime) {
+    lastVideoTime = video.currentTime;
+
+    if (gestureStatus) {
+      let startTimeMs = performance.now();
+      gestureRecognition(video, startTimeMs)
+    }
+
+    if (eyeFocusStatus) {
+      let startTimeMs = performance.now();
+      eyeFocusRecognition(video, startTimeMs)
+    }
+  }
+
+  if (webcamRunning === true) {
+    window.requestAnimationFrame(predictWebcam);
+  }
 }

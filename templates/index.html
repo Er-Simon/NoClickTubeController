@@ -34,9 +34,9 @@
       <div class="text-center mb-5">
         <img id="loading" src="static/images/loading.svg" alt="Loading content">
 
-        <div id="gestureDemos" class="d-none">
-          <div id="liveView" class="videoView">
-            <button id="gestureWebcamButton" type="button" class="btn btn-danger my-button mb-4">Grant access to the webcam</button>
+        <div id="recognitionSection" class="d-none">
+          <div class="videoView">
+            <button id="webcamButton" type="button" class="btn btn-danger my-button mb-4">Grant access to the webcam</button>
             <div class="mt-2 mb-4">
               <div class="row justify-content-center d-none" id="gestureSwitch">
                 <div class="col-10 col-sm-5 col-lg-3">
@@ -49,7 +49,7 @@
               <div class="row justify-content-center d-none" id="eyeFocusSwitch">
                 <div class="col-10 col-sm-5 col-lg-3">
                   <div class="form-check form-switch">
-                    <input class="form-check-input my-form-check-input" type="checkbox" role="switch" id="flexSwitchEyeFocusControl" checked>
+                    <input class="form-check-input my-form-check-input" type="checkbox" role="switch" id="flexSwitchEyeFocusControl">
                     <label class="form-check-label switch-label" for="flexSwitchEyeFocusControl">Facial-features control</label>
                   </div>
                 </div>
@@ -58,10 +58,12 @@
             <div class="row">
               <div class="col-12 col-md-6 offset-md-3">
                 <div style="position: relative;">
-                  <video id="gestureWebcam" class="d-none" autoplay="" playsinline="" style="height: auto; width: 100%;"></video>
-                  <canvas class="d-none" id="gesture_output_canvas" width="1280" height="720" style="position: absolute; top: 0px; height: auto; width: 100%; z-index: 1;"></canvas>
-                  <canvas class="d-none" id="eye_focus_output_canvas" width="1280" height="720" style="position: absolute; top: 0px; height: auto; width: 100%; z-index: 2;"></canvas>
-                  <!-- <p id="gesture_output" class="text-center mt-2 d-none"></p> -->
+                  <video id="userVideo" class="d-none" autoplay="" playsinline="" style="height: auto; width: 100%;"></video>
+                  <canvas class="d-none" id="gesture_output_canvas" width="1280" height="720"></canvas>
+                  <canvas class="d-none" id="gesture_information_output_canvas" width="1280" height="720"></canvas>
+                  <canvas class="d-none" id="eye_focus_output_canvas" width="1280" height="720"></canvas>
+                                    
+                  {% include 'modal.html' %}
                 </div>
               </div>
             </div>
@@ -84,13 +86,15 @@
               <span class="input-group-text" id="basic-addon3">URL</span>
 
               <script>
-                function hideErrorMessage() {
-                  let alert = document.getElementById('alert-message')
-                  alert.classList.add('d-none')
+                function showErrorMessage(status=false) {
+                  let alert = document.getElementById('alert-message');
+
+                  if (status === true) alert.classList.remove('d-none');
+                  else if (status === false) alert.classList.add('d-none');
                 }
               </script>
 
-              <input oninput="hideErrorMessage()" type="text" class="form-control" id="youtube-url" aria-describedby="basic-addon3 basic-addon4">
+              <input oninput="showErrorMessage()" type="text" class="form-control" id="youtube-url" aria-describedby="basic-addon3 basic-addon4">
               <button onclick="handleYouTubeURL()" id="play-button" class="btn btn-dagner my-button w-25" type="button" disabled>Play</button>
             </div>
 
@@ -167,31 +171,31 @@
                 SevenFingers: 'Six fingers',
                 SevenFingers: 'Seven fingers',
                 EightFingers: 'Eight fingers'
-              }
+              };
               
-              var actionToControls = {
-                playVideoControl: 'ok',
-                pauseVideoControl: 'stop',
-                volumeUpVideoControl: 'rock',
-                volumeDownVideoControl: 'closed_fist',
-                muteVideoControl: 'mute',
-                unmuteVideoControl: 'like'
-              }
-              
-              var userPreferences = window.localStorage.getItem('actionToControls')
+              var userPreferences = window.localStorage.getItem('actionToControls');
+
+              var actionToControls;
               
               if (userPreferences) {
-                actionToControls = JSON.parse(userPreferences)
+                actionToControls = JSON.parse(userPreferences);
+              } else {
+                actionToControls = {
+                  playVideoControl: 'ok',
+                  pauseVideoControl: 'stop',
+                  volumeUpVideoControl: 'rock',
+                  volumeDownVideoControl: 'closed_fist',
+                  muteVideoControl: 'mute',
+                  unmuteVideoControl: 'like'
+                };
               }
               
               var controlsToAction = {
                 "focus": "playVideoControl",
                 "noFocus": "pauseVideoControl"
-              }
+              };
               
-              for (const action in actionToControls) controlsToAction[actionToControls[action]] = action
-              
-              const selectElements = document.querySelectorAll('select')
+              for (const action in actionToControls) controlsToAction[actionToControls[action]] = action;
               
               function handleOptions() {
                 for (const selectActionName in actionToControls) {
@@ -214,24 +218,43 @@
                 }
               }
               
-              function onChangeHandler(event) {
+              async function onChangeHandler(event) {
                 const selectedId = event.target.id
                 const selectedValue = event.target.value
+
+                if (selectedValue.toLowerCase().includes('fingers')) {
+                  var warningToastEle = document.getElementById('warningToast');
+            
+                  var warningToast = bootstrap.Toast.getOrCreateInstance(warningToastEle, {
+                    delay: 10000
+                  });
+            
+                  if (warningToast.isShown()) {
+                    warningToast.dispose();
+                  }
+            
+                  var warningToast = bootstrap.Toast.getOrCreateInstance(warningToastEle);
+            
+                  await warningToast.show();
+                }
+                
               
                 delete controlsToAction[actionToControls[selectedId]]
                 actionToControls[selectedId] = selectedValue
                 controlsToAction[selectedValue] = selectedId
               
-                handleOptions()
+                handleOptions();
               
                 window.localStorage.setItem('actionToControls', JSON.stringify(actionToControls))
               }
+
+              const selectElements = document.querySelectorAll('select')
               
               selectElements.forEach((select) => {
                 select.addEventListener('change', onChangeHandler)
               })
-              
-              handleOptions()
+
+              document.addEventListener('DOMContentLoaded', handleOptions(), false);
             </script>
           </div>
         </div>
@@ -240,11 +263,13 @@
 
     {% include 'footer.html' %}
 
+    {% include 'toasts.html' %}
+
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="static/scripts/youtube-player.js"></script>
-    <script src="static/scripts/mediapipe.js" id="rendered-js" type="module"></script>
+    <script src="static/scripts/mediapipe.js" type="module"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm/vision_wasm_internal.js" crossorigin="anonymous"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
   </body>
 </html>
