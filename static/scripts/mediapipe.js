@@ -117,23 +117,23 @@ function handleGestureSwitchChange() {
   }
 }
 
-function photoOnClick(dot) {
+function photoOnClick(dot, modal) {
   return new Promise(resolve => {
-    const timeoutDuration = 100000; 
-
-    const timeoutId = setTimeout(() => {
-      dot.removeEventListener('click', gestore);
-      resolve(false);
-    }, timeoutDuration);
+    const checkModalStatus = setInterval(() => {
+      if (!modal.classList.contains('show')) {
+        clearInterval(checkModalStatus);
+        resolve(false);
+        return;
+      }
+    }, 100);
 
     const gestore = () => {
-      clearTimeout(timeoutId);
+      clearInterval(checkModalStatus);
       var result = faceLandmarker.detectForVideo(video, performance.now());
-      dot.removeEventListener('click', gestore);
       resolve(result);
     };
 
-    dot.addEventListener('click', gestore);
+    dot.addEventListener('click', gestore, { once: true });
   });
 }
 
@@ -143,33 +143,42 @@ async function eyeFocusCalibration() {
   const modal = document.getElementById("calibrationModal");
   var calibrationModal = new bootstrap.Modal(modal, {});
 
-  await calibrationModal.show();
+  const modalHidden = new Promise((resolve) => {
+    modal.addEventListener('hidden.bs.modal', resolve, { once: true });
+  });
 
   var dots = document.getElementsByClassName('dot');
 
-  for (var index = 0; index < dots.length; index++) {
-    let dot = dots[index];
-
-    dot.classList.remove('invisible');
-
-    let result = await photoOnClick(dot);
-
-    dot.classList.add('invisible');
-
-    if (result === false) break;
-
-    result.faceBlendshapes[0].categories.forEach((item) => {
-      if (item.categoryName in calibrationData) {
-        if (item.score > calibrationData[item.categoryName]) {
-          calibrationData[item.categoryName] = item.score;
+  modal.addEventListener('shown.bs.modal', async event => {
+    for (var index = 0; index < dots.length; index++) {
+      let dot = dots[index];
+  
+      dot.classList.remove('invisible');
+  
+      let result = await photoOnClick(dot, modal);
+  
+      dot.classList.add('invisible');
+  
+      if (result === false) break;
+  
+      result.faceBlendshapes[0].categories.forEach((item) => {
+        if (item.categoryName in calibrationData) {
+          if (item.score > calibrationData[item.categoryName]) {
+            calibrationData[item.categoryName] = item.score;
+          }
         }
-      }
-    })
+      })
+  
+      if (index == dots.length - 1) response = true;
+    }
 
-    if (index == dots.length - 1) response = true;
-  }
+    await calibrationModal.hide();
 
-  await calibrationModal.hide();
+  }, { once: true });
+
+  await calibrationModal.show();
+
+  await modalHidden;
 
   return response;
 }
@@ -514,8 +523,8 @@ function eyeFocusRecognition(video, startTimeMs) {
 let lastVideoTime = -1;
 let results = undefined;
 
-function predictWebcam() {  
-  if (lastVideoTime !== video.currentTime) {
+function predictWebcam() {
+  if (video.currentTime > lastVideoTime) {
     lastVideoTime = video.currentTime;
 
     if (gestureStatus) {
