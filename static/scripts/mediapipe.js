@@ -69,12 +69,23 @@ let webcamRunning = false;
 let webcamStream;
 
 const webcamButton = document.getElementById("webcamButton");
+const recognitionOutput = document.getElementById("recognitionOutput");
 const video = document.getElementById("userVideo");
 
-const gestureSwitchSection = document.getElementById("gestureSwitch");
-const eyeFocusSwitchSection = document.getElementById("eyeFocusSwitch");
 const gestureSwitch = document.getElementById("flexSwitchGestureControl");
 const eyeFocusSwitch = document.getElementById("flexSwitchEyeFocusControl");
+
+const canvasGestureElement = document.getElementById("gesture_output_canvas");
+const canvasGestureInformationElement = document.getElementById("gesture_information_output_canvas");
+const canvasEyeFocusElement = document.getElementById("eye_focus_output_canvas");
+
+const canvasGestureCtx = canvasGestureElement.getContext("2d");
+const canvasGestureInformationCtx = canvasGestureInformationElement.getContext("2d");
+const canvasEyeFocusCtx = canvasEyeFocusElement.getContext("2d");
+
+const drawingGestureUtils = new DrawingUtils(canvasGestureCtx);
+const drawingEyeFocusUtils = new DrawingUtils(canvasEyeFocusCtx);
+
 
 let gestureStatus = false;
 let eyeFocusStatus = false;
@@ -126,12 +137,12 @@ function photoOnClick(dot, modal) {
       }
     }, 100);
 
-    const gestore = (e) => {
+    const gestore = (event) => {
       clearInterval(checkModalStatus);
       var result = faceLandmarker.detectForVideo(video, performance.now());
       resolve(result);
 
-      e.preventDefault();
+      event.preventDefault();
     };
 
     dot.addEventListener('click', gestore, { once: true });
@@ -152,7 +163,7 @@ async function eyeFocusCalibration() {
 
   var dots = document.getElementsByClassName('dot');
 
-  modal.addEventListener('shown.bs.modal', async event => {
+  modal.addEventListener('shown.bs.modal', async (event) => {
     for (var index = 0; index < dots.length; index++) {
       let dot = dots[index];
   
@@ -177,13 +188,13 @@ async function eyeFocusCalibration() {
 
     await calibrationModal.hide();
 
+    event.preventDefault();
+
   }, { once: true });
 
   await calibrationModal.show();
 
   await modalHidden;
-
-  e.preventDefault();
 
   return response;
 }
@@ -211,6 +222,7 @@ function handleEyeFocusSwitchChange() {
 
     } else {
       eyeFocusSwitch.checked = !eyeFocusSwitch.checked;
+      eyeFocusStatus = false;
     }
   } else {
     canvasEyeFocusElement.classList.add("d-none");
@@ -247,9 +259,7 @@ function enableCam(event) {
       gestureSwitch.addEventListener('change', handleGestureSwitchChange);
       eyeFocusSwitch.addEventListener('change', handleEyeFocusSwitchChange);
 
-      video.classList.remove('d-none');
-      gestureSwitchSection.classList.remove("d-none");
-      eyeFocusSwitchSection.classList.remove("d-none");
+      recognitionOutput.classList.remove("d-none");
     });
 
   } else {
@@ -266,28 +276,18 @@ function enableCam(event) {
   
     video.removeEventListener("loadeddata", predictWebcam);
 
-    video.classList.add('d-none');
-    gestureSwitchSection.classList.add("d-none");
-    eyeFocusSwitchSection.classList.add("d-none");
+    recognitionOutput.classList.add("d-none");
     
     gestureSwitch.removeEventListener('change', handleGestureSwitchChange);
     eyeFocusSwitch.removeEventListener('change', handleEyeFocusSwitchChange);
+
+    clearGestureCanvas();
+    clearGestureInformationCanvas();
+    clearEyeFocusCanvas();
   }
 
-  e.preventDefault();
+  event.preventDefault();
 }
-
-const canvasGestureElement = document.getElementById("gesture_output_canvas");
-const canvasGestureInformationElement = document.getElementById("gesture_information_output_canvas");
-const canvasEyeFocusElement = document.getElementById("eye_focus_output_canvas");
-
-const canvasGestureCtx = canvasGestureElement.getContext("2d");
-const canvasGestureInformationCtx = canvasGestureInformationElement.getContext("2d");
-const canvasEyeFocusCtx = canvasEyeFocusElement.getContext("2d");
-
-const drawingGestureUtils = new DrawingUtils(canvasGestureCtx);
-const drawingEyeFocusUtils = new DrawingUtils(canvasEyeFocusCtx);
-
 
 function clearGestureCanvas() {
   canvasGestureCtx.clearRect(
@@ -531,7 +531,7 @@ let lastVideoTime = -1;
 let results = undefined;
 
 function predictWebcam() {
-  if (video.currentTime > lastVideoTime) {
+  if (video.currentTime != lastVideoTime) {
     lastVideoTime = video.currentTime;
 
     if (gestureStatus) {
