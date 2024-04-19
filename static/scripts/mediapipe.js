@@ -141,7 +141,9 @@ async function eyeFocusCalibration() {
   var response = false;
 
   const modal = document.getElementById("calibrationModal");
-  var calibrationModal = new bootstrap.Modal(modal, {});
+  var calibrationModal = new bootstrap.Modal(modal, {
+    focus: false
+  });
 
   const modalHidden = new Promise((resolve) => {
     modal.addEventListener('hidden.bs.modal', resolve, { once: true });
