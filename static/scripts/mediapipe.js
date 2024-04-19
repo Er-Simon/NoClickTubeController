@@ -123,14 +123,15 @@ function photoOnClick(dot, modal) {
       if (!modal.classList.contains('show')) {
         clearInterval(checkModalStatus);
         resolve(false);
-        return;
       }
     }, 100);
 
-    const gestore = () => {
+    const gestore = (e) => {
       clearInterval(checkModalStatus);
       var result = faceLandmarker.detectForVideo(video, performance.now());
       resolve(result);
+
+      e.preventDefault();
     };
 
     dot.addEventListener('click', gestore, { once: true });
@@ -181,6 +182,8 @@ async function eyeFocusCalibration() {
   await calibrationModal.show();
 
   await modalHidden;
+
+  e.preventDefault();
 
   return response;
 }
@@ -270,6 +273,8 @@ function enableCam(event) {
     gestureSwitch.removeEventListener('change', handleGestureSwitchChange);
     eyeFocusSwitch.removeEventListener('change', handleEyeFocusSwitchChange);
   }
+
+  e.preventDefault();
 }
 
 const canvasGestureElement = document.getElementById("gesture_output_canvas");
