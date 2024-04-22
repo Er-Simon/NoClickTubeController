@@ -140,7 +140,12 @@ function photoOnClick(dot, modal) {
     const gestore = (event) => {
       clearInterval(checkModalStatus);
       var result = faceLandmarker.detectForVideo(video, performance.now());
-      resolve(result);
+
+      if (result.faceBlendshapes.length !== 0) {
+        resolve(result);
+      } else {
+        dot.addEventListener('click', gestore, { once: true });
+      }
 
       event.preventDefault();
     };
