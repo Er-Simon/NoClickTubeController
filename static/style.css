@@ -72,6 +72,10 @@ canvas {
     display: inline-block;
 }
 
+.my-padding-top {
+    padding-top: 5rem;
+}
+
 @media (max-width: 576px) {
     .my-width {
         border-radius: 0 !important;
