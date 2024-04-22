@@ -14,15 +14,11 @@ canvas {
     z-index: 1;
 }
 
-.my-padding-top {
-    padding-top: 4rem;
-}
-
-.my-nav-link, .my-nav-link:focus {
+.my-nav-link {
     color: #282828 !important;
 }
 
-.my-nav-link:hover {
+.my-nav-link:active {
     color: rgba(204,0,0,0.9) !important;
 }
 
@@ -32,17 +28,17 @@ canvas {
     font-weight: 500 !important;
 }
 
-.my-active:hover {
+.my-active:active {
     color: #282828 !important;
 }
 
-.my-button, .my-button:focus {
+.my-button {
     background-color: rgba(204,0,0,0.9) !important;
     color: white !important;
     font-weight: 500 !important;
 }
 
-.my-button:hover {
+.my-button:active {
     color: #282828 !important;
 }
 
@@ -97,5 +93,19 @@ canvas {
 @media (min-width: 992px) {
     .my-width {
         width: 25% !important;
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .my-nav-link:hover {
+        color: rgba(204,0,0,0.9) !important;
+    }
+
+    .my-active:hover {
+        color: #282828 !important;
+    }
+
+    .my-button:hover {
+        color: #282828 !important;
     }
 }
