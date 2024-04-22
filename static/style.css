@@ -14,7 +14,11 @@ canvas {
     z-index: 1;
 }
 
-.my-nav-link {
+.my-padding-top {
+    padding-top: 4rem;
+}
+
+.my-nav-link, .my-nav-link:focus {
     color: #282828 !important;
 }
 
@@ -32,7 +36,7 @@ canvas {
     color: #282828 !important;
 }
 
-.my-button {
+.my-button, .my-button:focus {
     background-color: rgba(204,0,0,0.9) !important;
     color: white !important;
     font-weight: 500 !important;

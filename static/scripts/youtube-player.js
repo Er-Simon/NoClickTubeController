@@ -27,7 +27,7 @@ const ACTIONS_TO_EMOJI = {
   EightFingers: '8️⃣'
 };
 
-const MIN_FOCUS_NOFOCUS_TIME = 1300;
+const MIN_FOCUS_NOFOCUS_TIME = 1600;
 
 
 var player = undefined;

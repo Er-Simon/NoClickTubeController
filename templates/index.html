@@ -28,7 +28,7 @@
   <body>
     {% include 'header.html' %}
 
-    <div class="container">
+    <div class="container my-padding-top">
       {% include 'heroes.html' %}
 
       <div class="text-center mb-5">
@@ -79,7 +79,7 @@
         </div>
       </div>
 
-      <div class="row mt-5" id="videoSection">
+      <div class="row" id="videoSection">
         <div class="col-12 col-md-8 offset-md-2">
           <div class="mb-3">
             <label for="basic-url" class="form-label display-6 fw-bold my-border mb-4">YouTube Video</label>
@@ -157,14 +157,14 @@
             <script>
               const controls = {
                 closed_fist: 'Closed fist ✊',
-                open_palm: 'Open palm ✋',
+                open_palm: 'Open palm 🖐️',
                 mute: 'Silence 🤫',
-                stop: 'Raised Hand ✋',
+                stop: 'Stop ✋',
                 call: 'Call Me 🤙',
                 ok: 'OK Hand 👌',
                 dislike: 'Thumbs down 👎',
                 like: 'Thumbs up 👍',
-                peace: 'Victory ✌️',
+                peace: 'Peace ✌️',
                 rock: 'Rock 🤘',
                 TwoFingers: 'Two fingers',
                 ThreeFingers: 'Three fingers',
@@ -266,6 +266,36 @@
     {% include 'footer.html' %}
 
     {% include 'toasts.html' %}
+
+    <script>
+      var navs = document.getElementsByClassName('my-nav-link');
+    
+      for (let i = 0; i < navs.length; i++) { 
+        let item = navs[i];
+    
+        item.addEventListener('click', function(event) {
+          console.log(item);
+    
+          var url = item.href;
+          var lastSlashIndex = url.lastIndexOf('/');
+    
+          var sectionId = url.substring(lastSlashIndex + 1 + 1);
+    
+          if (sectionId !== '') {
+            let headerHeight = document.getElementById('header').offsetHeight;
+            
+            var section = document.getElementById(sectionId);
+    
+            if (section) {
+              var offset = section.offsetTop - headerHeight;
+              window.scrollTo({ top: offset, behavior: 'smooth' });
+            }
+    
+            event.preventDefault();
+          } 
+        });
+      }
+      </script>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="static/scripts/youtube-player.js"></script>
