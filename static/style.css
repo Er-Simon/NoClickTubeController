@@ -65,8 +65,8 @@ canvas {
 }
 
 .dot {
-    height: 25px;
-    width: 25px;
+    height: 33px;
+    width: 33px;
     background-color: rgba(204,0,0,0.9);
     border-radius: 50%;
     display: inline-block;

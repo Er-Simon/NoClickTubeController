@@ -510,12 +510,15 @@ function eyeFocusRecognition(video, startTimeMs) {
         (e) => e.categoryName in calibrationData && e.score > calibrationData[e.categoryName]
       )
 
-    //if (shapes.length > 0) {
-    //  for(var index in shapes) {
-    //    console.log(`${shapes[index].categoryName} ${shapes[index].score}`);
-    //  }
-    //  console.log('\n');
-    //}
+    if (shapes.length > 0) {
+      for(var index in shapes) {
+        console.log(`${shapes[index].categoryName} ${shapes[index].score} > ${calibrationData[shapes[index].categoryName]}`);
+      }
+      console.log('\n');
+      alert("console.log");
+    }
+
+    
 
     let recognitionResult = {
       type: 'face',
