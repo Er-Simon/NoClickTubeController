@@ -101,6 +101,8 @@ const calibrationData = {
   eyeLookUpRight: 0,
 }
 
+const eyeFocusSensibility = 0.15;
+
 // Check if webcam access is supported.
 function hasGetUserMedia() {
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
@@ -200,6 +202,11 @@ async function eyeFocusCalibration() {
   await calibrationModal.show();
 
   await modalHidden;
+
+  // Apply sensibility
+  for (let data in calibrationData) {
+    calibrationData[data] += calibrationData[data] * 0.15
+  }
 
   return response;
 }
@@ -509,13 +516,6 @@ function eyeFocusRecognition(video, startTimeMs) {
       results.faceBlendshapes[0].categories.filter(
         (e) => e.categoryName in calibrationData && e.score > calibrationData[e.categoryName]
       )
-
-    //if (shapes.length > 0) {
-    //  for(var index in shapes) {
-    //    console.log(`${shapes[index].categoryName} ${shapes[index].score} > ${calibrationData[e.categoryName]}`);
-    //  }
-    //  console.log('\n');
-    //}
 
     let recognitionResult = {
       type: 'face',

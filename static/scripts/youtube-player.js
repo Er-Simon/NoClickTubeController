@@ -1,6 +1,6 @@
 const YOUTUBE_LINK_REGEX = /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/gi
 
-const PAUSE_BETWEEN_COMMANDS_IN_MILLIS = 900;
+const PAUSE_BETWEEN_COMMANDS_IN_MILLIS = 800;
 
 const INCREASE_VOLUME_VALUE = 10;
 const DECREASE_VOLUME_VALUE = -10;
@@ -139,7 +139,7 @@ async function YTPlayerController(recognition) {
 
   var currentTime = Date.now();
 
-  if (currentTime - timestampLastCommand > MIN_FOCUS_NOFOCUS_TIME) {
+  if (currentTime - timestampLastCommand > PAUSE_BETWEEN_COMMANDS_IN_MILLIS) {
 
     var modality = recognition.type;
     var data = recognition.data;
@@ -175,7 +175,7 @@ async function YTPlayerController(recognition) {
         if (action === lastAction) {
           if (firstEyeNoFocus === undefined) {
             firstEyeNoFocus = currentTime;
-          } else if (currentTime - firstEyeNoFocus < PAUSE_BETWEEN_COMMANDS_IN_MILLIS) {
+          } else if (currentTime - firstEyeNoFocus < MIN_FOCUS_NOFOCUS_TIME) {
             action = undefined;
           }
         } else {
@@ -185,6 +185,7 @@ async function YTPlayerController(recognition) {
     }
 
     if (action) {
+
       if (controlsToAction[action] == "playVideoControl") {
         player.playVideo();
 
@@ -222,7 +223,7 @@ async function YTPlayerController(recognition) {
   
         var toast = bootstrap.Toast.getOrCreateInstance(toastEle);
   
-        var toastTextContent = `Action recognized: ${action} ${ACTIONS_TO_EMOJI[action]}`;
+        var toastTextContent = `Action recognized: ${action} ${ACTIONS_TO_EMOJI[action]} timestamp: ${currentTime}`;
         toastBody.innerHTML = toastTextContent;
       
         await toast.show();
