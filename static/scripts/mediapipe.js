@@ -27,7 +27,7 @@ const recognitionSection = document.getElementById("recognitionSection");
 // Before we can use HandLandmarker class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment to
 // get everything needed to run.
-async function createFaceLandmarker() {
+async function initialize() {
   const filesetResolver = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
   );
@@ -59,7 +59,7 @@ async function createFaceLandmarker() {
   recognitionSection.classList.remove("d-none");
 }
 
-createFaceLandmarker();
+initialize();
 
 /********************************************************************
 // Demo 2: Continuously grab image from webcam stream and detect it.
@@ -100,8 +100,6 @@ const calibrationData = {
   eyeLookUpLeft: 0,
   eyeLookUpRight: 0,
 }
-
-const eyeFocusSensibility = 0.15;
 
 // Check if webcam access is supported.
 function hasGetUserMedia() {
