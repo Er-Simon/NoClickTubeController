@@ -210,7 +210,7 @@ async function YTPlayerController(recognition) {
           timestampLastCommand -= PAUSE_BETWEEN_COMMANDS_IN_MILLIS * 0.75;
         }
 
-        if (action !== lastAction) {
+        if (action !== lastAction || controlsToAction[action].includes("volume")) {
           var toastEle = document.getElementById('liveToast');
           var toastBody = document.getElementById('toast-body-content');
     
