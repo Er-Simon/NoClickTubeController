@@ -319,7 +319,7 @@ function clearGestureInformationCanvas() {
   canvasGestureInformationCtx.save();
 }
 
-function gestureRecognition(video, startTimeMs) {
+async function gestureRecognition(video, startTimeMs) {
   clearGestureCanvas();
   clearGestureInformationCanvas();
 
@@ -436,7 +436,7 @@ function gestureRecognition(video, startTimeMs) {
     }
 
     if (recognitionResult.data.length > 0)
-      YTPlayerController(recognitionResult);
+      return await YTPlayerController(recognitionResult);
   }
 }
 
@@ -509,42 +509,44 @@ function eyeFocusRecognition(video, startTimeMs) {
     }
   }
 
+  let recognitionResult = {
+    type: 'face',
+    data: 'noFocus'
+  };
+
   if (results.faceBlendshapes) {
-    let shapes = results.faceBlendshapes.length == 0 ? [] :
-      results.faceBlendshapes[0].categories.filter(
+    if (results.faceBlendshapes.length !== 0) {
+      let shapes = results.faceBlendshapes[0].categories.filter(
         (e) => e.categoryName in calibrationData && e.score > calibrationData[e.categoryName]
       )
 
-    let recognitionResult = {
-      type: 'face',
-      data: undefined
-    };
-
-    if (shapes.length === 0) {
-      recognitionResult.data = 'focus';
-    } else {
-      recognitionResult.data = 'noFocus';
+      if (shapes.length === 0) {
+        recognitionResult.data = 'focus';
+      } 
     }
-
-    YTPlayerController(recognitionResult);
   }
+
+  YTPlayerController(recognitionResult);
 }
 
 let lastVideoTime = -1;
 let results = undefined;
 
-function predictWebcam() {
+async function predictWebcam() {
   if (video.currentTime != lastVideoTime) {
     lastVideoTime = video.currentTime;
 
+    let gestureResult;
     if (gestureStatus) {
       let startTimeMs = performance.now();
-      gestureRecognition(video, startTimeMs)
+      gestureResult = await gestureRecognition(video, startTimeMs)
     }
 
-    if (eyeFocusStatus) {
-      let startTimeMs = performance.now();
-      eyeFocusRecognition(video, startTimeMs)
+    if (gestureResult !== true) {
+      if (eyeFocusStatus) {
+        let startTimeMs = performance.now();
+        eyeFocusRecognition(video, startTimeMs)
+      }
     }
   }
 

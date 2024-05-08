@@ -147,7 +147,6 @@ async function YTPlayerController(recognition) {
     if (!modality || !data) return;
 
     var action;
-
     if (modality === 'gesture') {
       var fingerCount = 0;
 
@@ -185,53 +184,55 @@ async function YTPlayerController(recognition) {
     }
 
     if (action) {
+      if (action in controlsToAction) {
+        if (controlsToAction[action] == "playVideoControl") {
+          player.playVideo();
+  
+          if (modality === 'gesture') disableEyeFocus = false;
+  
+        } else if (controlsToAction[action] == "pauseVideoControl") {
+          player.pauseVideo();
+  
+          if (modality === 'gesture') disableEyeFocus = true;
+  
+        } else if (controlsToAction[action] == "muteVideoControl") {
+          player.mute();
 
-      if (controlsToAction[action] == "playVideoControl") {
-        player.playVideo();
-
-        if (modality === 'gesture') disableEyeFocus = false;
-
-      } else if (controlsToAction[action] == "pauseVideoControl") {
-        player.pauseVideo();
-
-        if (modality === 'gesture') disableEyeFocus = true;
-
-      } else if (controlsToAction[action] == "muteVideoControl") {
-        player.mute();
-      } else if (controlsToAction[action] == "unmuteVideoControl") {
-        player.unMute();
-
-      } else if (action in controlsToAction) {
-        if (controlsToAction[action] == "volumeUpVideoControl") {
+        } else if (controlsToAction[action] == "unmuteVideoControl") {
+          player.unMute();
+  
+        } else if (controlsToAction[action] == "volumeUpVideoControl") {
           changePlayerVolume(INCREASE_VOLUME_VALUE);
+          timestampLastCommand -= PAUSE_BETWEEN_COMMANDS_IN_MILLIS * 0.75;
+
         } else if (controlsToAction[action] == "volumeDownVideoControl") {
           changePlayerVolume(DECREASE_VOLUME_VALUE);
+          timestampLastCommand -= PAUSE_BETWEEN_COMMANDS_IN_MILLIS * 0.75;
         }
 
-        timestampLastCommand -= PAUSE_BETWEEN_COMMANDS_IN_MILLIS * 0.75;
-      }
-
-      if (action !== lastAction) {
-        var toastEle = document.getElementById('liveToast');
-        var toastBody = document.getElementById('toast-body-content');
-  
-        var toast = bootstrap.Toast.getOrCreateInstance(toastEle);
-  
-        if (toast.isShown()) {
-          toast.dispose();
+        if (action !== lastAction) {
+          var toastEle = document.getElementById('liveToast');
+          var toastBody = document.getElementById('toast-body-content');
+    
+          var toast = bootstrap.Toast.getOrCreateInstance(toastEle);
+    
+          if (toast.isShown()) {
+            toast.dispose();
+          }
+    
+          var toast = bootstrap.Toast.getOrCreateInstance(toastEle);
+    
+          var toastTextContent = `Action recognized: ${action} ${ACTIONS_TO_EMOJI[action]}`;
+          toastBody.innerHTML = toastTextContent;
+        
+          await toast.show();
         }
   
-        var toast = bootstrap.Toast.getOrCreateInstance(toastEle);
-  
-        var toastTextContent = `Action recognized: ${action} ${ACTIONS_TO_EMOJI[action]} timestamp: ${currentTime}`;
-        toastBody.innerHTML = toastTextContent;
-      
-        await toast.show();
+        lastAction = action;
+        lastModality = modality;
+        timestampLastCommand = Date.now();
+        return true;
       }
-
-      lastAction = action;
-      lastModality = modality;
-      timestampLastCommand = Date.now();
     }
   }
 }
